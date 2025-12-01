@@ -96,6 +96,7 @@ namespace green::mbpt {
       utils::allreduce(MPI_IN_PLACE, Sigma_tau.data(), Sigma_tau.size() / (_nso * _nso), dt_matrix, matrix_sum_op,
                        utils::context.internode_comm);
       Sigma_tau /= (_nk * _nk);
+      Sigma_tau += _core_sigma;
     }
     sigma_tau.fence();
     statistics.end();
@@ -121,6 +122,11 @@ namespace green::mbpt {
 
   void gf2_solver::selfenergy_innerloop(size_t tau_offset, size_t ntau_local, const std::array<size_t, 4>& k, size_t is, const ztensor<5>& Gr_full_tau) {
     statistics.start("nao");
+    
+    //* Define core orbitals for GF2 calculation
+    std::vector<std::size_t> _core_rows; // e.g. {0,1,2,3}
+    std::vector<std::size_t> _core_cols; // e.g. {0,1,2,3}
+
     size_t nao2     = _nao * _nao;
     size_t nao3     = _nao * _nao * _nao;
     // Link current k-points to corresponding reduced k's
@@ -155,23 +161,23 @@ namespace green::mbpt {
         int tt    = _nts - t - 1;
         // initialize Green's functions
         for (size_t isp = 0; isp < _ns; ++isp) {
-          for (size_t q0 = 0; q0 < _nao; ++q0) {
-            for (size_t p0 = 0; p0 < _nao; ++p0) {
-              G1(q0, p0) = _bz_utils.symmetry().conj_list()[k[1]] == 0 ? Gr_full_tau(t, is, k1_pos, q0, p0)
-                                                                       : std::conj(Gr_full_tau(t, is, k1_pos, q0, p0));
-              G2(q0, p0) = _bz_utils.symmetry().conj_list()[k[2]] == 0 ? Gr_full_tau(tt, isp, k2_pos, q0, p0)
-                                                                       : std::conj(Gr_full_tau(tt, isp, k2_pos, q0, p0));
-              G3(q0, p0) = _bz_utils.symmetry().conj_list()[k[3]] == 0 ? Gr_full_tau(t, isp, k3_pos, q0, p0)
-                                                                       : std::conj(Gr_full_tau(t, isp, k3_pos, q0, p0));
-            }
-          }
+          //* full blocks (with symmetry conjugation)
+          G1 = extract_G_tau_k(Gr_full_tau, t,  k1_pos, k[1], is);
+          G2 = extract_G_tau_k(Gr_full_tau, tt, k2_pos, k[2], isp);
+          G3 = extract_G_tau_k(Gr_full_tau, t,  k3_pos, k[3], isp);
+
+          //* apply orbital restriction like Python set_core
+          MatrixXcd G1_core = restrict_orbitals(G1, _core_rows, _core_cols);
+          MatrixXcd G2_core = restrict_orbitals(G2, _core_rows, _core_cols);
+          MatrixXcd G3_core = restrict_orbitals(G3, _core_rows, _core_cols);
+
           for (size_t i = 0; i < _nao; ++i) {
             // pm,k
             MMatrixXcd Sm(Sigma_local.data() + shift + i * _nao, 1, _nao);
             // v1 for direct
             MMatrixXcd vm_1(vijkl.data() + i * nao3, nao2, _nao);
             // Direct diagram
-            contraction(nao2, nao3, is == isp, false, G1, G2, G3, Xm_4, Xm_1, Xm_2, Ym_1, Ym_2, vm_1, Xm, Vm, Vmx, Sm);
+            contraction(nao2, nao3, is == isp, false, G1_core, G2_core, G3_core, Xm_4, Xm_1, Xm_2, Ym_1, Ym_2, vm_1, Xm, Vm, Vmx, Sm);
           }
         }
       }

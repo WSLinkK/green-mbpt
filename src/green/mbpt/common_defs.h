@@ -166,6 +166,12 @@ namespace green::mbpt {
     p.define<sigma_q0_treatment_e>("q0_treatment", "GW q=0 divergence treatment", ignore_G0);
     p.define<std::vector<job_type>>("jobs", "Jobs to run.", std::vector{SC});
     p.define<kernel_type>("kernel", "Type of the computing kernel.", CPU);
+    //* Define core orbital parameters
+    p.define<std::string>("core_rows","Comma-separated list of core row orbital indices (0-based).", "");
+    p.define<std::string>("core_cols","Comma-separated list of core column orbital indices (0-based). If empty, core_rows is used.", "");
+    p.define<std::string>("atom_core_file","Path to file defining core orbitals per atom type.", "");
+    p.define<std::string>("atom_store_key","HDF5 key in atom_core_file where core orbital data is stored.", "core_orbitals");
+
 #ifdef GREEN_CUSTOM_KERNEL_HEADER_0
     GREEN_CUSTOM_KERNEL_NS_0::custom_kernel_parameters(p);
 #endif
