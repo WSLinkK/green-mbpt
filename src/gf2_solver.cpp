@@ -122,10 +122,6 @@ namespace green::mbpt {
 
   void gf2_solver::selfenergy_innerloop(size_t tau_offset, size_t ntau_local, const std::array<size_t, 4>& k, size_t is, const ztensor<5>& Gr_full_tau) {
     statistics.start("nao");
-    
-    //* Define core orbitals for GF2 calculation
-    std::vector<std::size_t> _core_rows; // e.g. {0,1,2,3}
-    std::vector<std::size_t> _core_cols; // e.g. {0,1,2,3}
 
     size_t nao2     = _nao * _nao;
     size_t nao3     = _nao * _nao * _nao;
@@ -167,9 +163,9 @@ namespace green::mbpt {
           G3 = extract_G_tau_k(Gr_full_tau, t,  k3_pos, k[3], isp);
 
           //* apply orbital restriction like Python set_core
-          MatrixXcd G1_core = restrict_orbitals(G1, _core_rows, _core_cols);
-          MatrixXcd G2_core = restrict_orbitals(G2, _core_rows, _core_cols);
-          MatrixXcd G3_core = restrict_orbitals(G3, _core_rows, _core_cols);
+          MatrixXcd G1_core = restrict_orbitals(G1, _valence_rows, _valence_cols);
+          MatrixXcd G2_core = restrict_orbitals(G2, _valence_rows, _valence_cols);
+          MatrixXcd G3_core = restrict_orbitals(G3, _valence_rows, _valence_cols);
 
           for (size_t i = 0; i < _nao; ++i) {
             // pm,k

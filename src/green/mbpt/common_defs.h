@@ -167,8 +167,8 @@ namespace green::mbpt {
     p.define<std::vector<job_type>>("jobs", "Jobs to run.", std::vector{SC});
     p.define<kernel_type>("kernel", "Type of the computing kernel.", CPU);
     //* Define core orbital parameters
-    p.define<std::string>("core_rows","Comma-separated list of core row orbital indices (0-based).", "");
-    p.define<std::string>("core_cols","Comma-separated list of core column orbital indices (0-based). If empty, core_rows is used.", "");
+    p.define<std::string>("valence_rows","Comma-separated list of core row orbital indices (0-based).", "");
+    p.define<std::string>("valence_cols","Comma-separated list of core column orbital indices (0-based). If empty, core_rows is used.", "");
     p.define<std::string>("atom_core_file","Path to file defining core orbitals per atom type.", "");
     p.define<std::string>("atom_store_key","HDF5 key in atom_core_file where core orbital data is stored.", "core_orbitals");
 

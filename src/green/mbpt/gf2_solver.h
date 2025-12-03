@@ -53,16 +53,24 @@ namespace green::mbpt {
       h5pp::archive core(p["atom_core_file"]);
       core[p["atom_store_key"]] >> _core_sigma;
       core.close();
+      
+      const std::array<size_t,5> &shp = _core_sigma.shape();
+      assert(shp[0] == _nts);
+      assert(shp[1] == _ns);
+      assert(shp[2] == _nk);
+      assert(shp[3] == _nao);
+      assert(shp[4] == _nao);
 
-      const std::string core_rows_str = p["core_rows"];
-      const std::string core_cols_str = p["core_cols"];
+      std::cout << _core_sigma(0,0,0,0,0) << std::endl;
+      const std::string valence_rows_str = p["valence_rows"];
+      const std::string valence_cols_str = p["valence_cols"];
 
-      _core_rows = parse_index_list(core_rows_str);
+      _valence_rows = parse_index_list(valence_rows_str);
 
-      if (!core_cols_str.empty()) {
-        _core_cols = parse_index_list(core_cols_str);
+      if (!valence_cols_str.empty()) {
+        _valence_cols = parse_index_list(valence_cols_str);
       } else {
-        _core_cols = _core_rows;  // default: same as rows
+        _valence_cols = _valence_rows;  // default: same as rows
       }
     }
 
@@ -88,8 +96,8 @@ namespace green::mbpt {
     size_t            _ns;
     size_t            _NQ;
 
-    std::vector<std::size_t> _core_rows;
-    std::vector<std::size_t> _core_cols;
+    std::vector<std::size_t> _valence_rows;
+    std::vector<std::size_t> _valence_cols;
 
     // Path to H5 file
     const std::string _path;
