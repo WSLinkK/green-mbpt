@@ -136,6 +136,17 @@ namespace green::mbpt {
 
   enum job_type { SC, WINTER, THERMODYNAMICS };
 
+  /**
+   * @brief Controls which orbital indices are restricted by the frozen-core approximation.
+   *
+   * all_electron   - no restriction; run full computation for all orbitals.
+   * valence_outer  - restrict only the outer (self-energy) indices (i,j); inner summation
+   *                  indices (k,l,m,n in G1/G2/G3) run over all orbitals.
+   * valence_full   - restrict both outer (i,j) and inner (G1/G2/G3) indices to the
+   *                  valence space defined by valence_rows / valence_cols.
+   */
+  enum frozen_core_mode_e { all_electron, valence_outer, valence_full };
+
   enum kernel_type {
     CPU
 #ifdef GREEN_CUSTOM_KERNEL_ENUM_0
@@ -171,6 +182,12 @@ namespace green::mbpt {
     p.define<std::string>("valence_cols","Comma-separated list of core column orbital indices (0-based). If empty, core_rows is used.", "");
     p.define<std::string>("atom_core_file","Path to file defining core orbitals per atom type.", "");
     p.define<std::string>("atom_store_key","HDF5 key in atom_core_file where core orbital data is stored.", "core_orbitals");
+    p.define<frozen_core_mode_e>("frozen_core_mode",
+        "Frozen-core orbital restriction mode: "
+        "all_electron (no restriction), "
+        "valence_outer (restrict self-energy (i,j) indices only), "
+        "valence_full (restrict both self-energy and Green's function (G1/G2/G3) indices).",
+        all_electron);
 
 #ifdef GREEN_CUSTOM_KERNEL_HEADER_0
     GREEN_CUSTOM_KERNEL_NS_0::custom_kernel_parameters(p);

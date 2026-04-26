@@ -37,6 +37,17 @@ endif ()
 
 include(GreenDeps)
 
+# Use local versions instead of fetching from GitHub
+Include(FetchContent)
+FetchContent_Declare(
+    green-symmetry
+    SOURCE_DIR /home/munkhw/lib/green-packages/green-symmetry
+)
+FetchContent_Declare(
+    green-sc
+    SOURCE_DIR /home/munkhw/lib/green-packages/green-sc
+)
+
 add_green_dependency(green-grids)
 add_green_dependency(green-h5pp)
 add_green_dependency(green-ndarray)
