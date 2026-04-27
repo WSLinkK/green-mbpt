@@ -96,7 +96,7 @@ namespace green::mbpt {
       utils::allreduce(MPI_IN_PLACE, Sigma_tau.data(), Sigma_tau.size() / (_nso * _nso), dt_matrix, matrix_sum_op,
                        utils::context.internode_comm);
       Sigma_tau /= (_nk * _nk);
-      Sigma_tau += _core_sigma;
+      // Sigma_tau += _core_sigma;
     }
     sigma_tau.fence();
     statistics.end();
@@ -158,9 +158,19 @@ namespace green::mbpt {
         // initialize Green's functions
         for (size_t isp = 0; isp < _ns; ++isp) {
           //* full blocks (with symmetry conjugation)
-          G1 = extract_G_tau_k(Gr_full_tau, t,  k1_pos, k[1], is);
-          G2 = extract_G_tau_k(Gr_full_tau, tt, k2_pos, k[2], isp);
-          G3 = extract_G_tau_k(Gr_full_tau, t,  k3_pos, k[3], isp);
+          //G1 = extract_G_tau_k(Gr_full_tau, t,  k1_pos, k[1], is);
+          //G2 = extract_G_tau_k(Gr_full_tau, tt, k2_pos, k[2], isp);
+          //G3 = extract_G_tau_k(Gr_full_tau, t,  k3_pos, k[3], isp);
+          for (size_t q0 = 0; q0 < _nao; ++q0) {
+            for (size_t p0 = 0; p0 < _nao; ++p0) {
+              G1(q0, p0) = _bz_utils.symmetry().conj_list()[k[1]] == 0 ? Gr_full_tau(t, is, k1_pos, q0, p0)
+                                                                       : std::conj(Gr_full_tau(t, is, k1_pos, q0, p0));
+              G2(q0, p0) = _bz_utils.symmetry().conj_list()[k[2]] == 0 ? Gr_full_tau(tt, isp, k2_pos, q0, p0)
+                                                                       : std::conj(Gr_full_tau(tt, isp, k2_pos, q0, p0));
+              G3(q0, p0) = _bz_utils.symmetry().conj_list()[k[3]] == 0 ? Gr_full_tau(t, isp, k3_pos, q0, p0)
+                                                                       : std::conj(Gr_full_tau(t, isp, k3_pos, q0, p0));
+            }
+          }
 
           // Optionally restrict inner (G1/G2/G3) indices for valence_full mode.
           Eigen::MatrixXcd G1_val, G2_val, G3_val;

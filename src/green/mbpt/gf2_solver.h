@@ -153,7 +153,7 @@ namespace green::mbpt {
       int         k_shift  = k_pos * _nao * _nao;
       CMMatrixXcd tmp(G_tau.data() + ts_shift + k_shift, G_tau.shape()[3], G_tau.shape()[4]);
       MatrixXcd   G = tmp;
-      if (_bz_utils.symmetry().conj_list()[k_red] == 1) {
+      if (_bz_utils.symmetry().conj_list()[k_red] != 0) {
         for (size_t i = 0; i < _nao; ++i) {
           for (size_t j = 0; j < _nao; ++j) {
             G(i, j) = std::conj(G(i, j));
