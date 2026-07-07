@@ -158,13 +158,43 @@ namespace green::mbpt {
           G1 = _bz_utils.k_symmetry().value_AO(Gr_full_tau(t, is), k[1]);
           G2 = _bz_utils.k_symmetry().value_AO(Gr_full_tau(tt, isp), k[2]);
           G3 = _bz_utils.k_symmetry().value_AO(Gr_full_tau(t, isp), k[3]);
+
+          // Optionally restrict inner (G1/G2/G3) indices for valence_full mode.
+          Eigen::MatrixXcd G1_val, G2_val, G3_val;
+          const Eigen::MatrixXcd* pG1 = &G1;
+          const Eigen::MatrixXcd* pG2 = &G2;
+          const Eigen::MatrixXcd* pG3 = &G3;
+          if (_frozen_core_mode == valence_full) {
+            G1_val = restrict_orbitals(G1, _valence_rows, _valence_cols);
+            G2_val = restrict_orbitals(G2, _valence_rows, _valence_cols);
+            G3_val = restrict_orbitals(G3, _valence_rows, _valence_cols);
+            pG1 = &G1_val; pG2 = &G2_val; pG3 = &G3_val;
+          }
+
           for (size_t i = 0; i < _nao; ++i) {
+            // For valence_outer / valence_full: skip outer row indices not in the valence set.
+            if (_frozen_core_mode != all_electron) {
+              bool i_in_valence = (std::find(_valence_rows.begin(), _valence_rows.end(), i) != _valence_rows.end());
+              if (!i_in_valence) continue;
+            }
             // pm,k
             MMatrixXcd Sm(Sigma_local.data() + shift + i * _nao, 1, _nao);
             // v1 for direct
             MMatrixXcd vm_1(vijkl.data() + i * nao3, nao2, _nao);
             // Direct diagram
-            contraction(nao2, nao3, is == isp, false, G1, G2, G3, Xm_4, Xm_1, Xm_2, Ym_1, Ym_2, vm_1, Xm, Vm, Vmx, Sm);
+            contraction(nao2, nao3, is == isp, false, *pG1, *pG2, *pG3, Xm_4, Xm_1, Xm_2, Ym_1, Ym_2, vm_1, Xm, Vm, Vmx, Sm);
+            // Zero out self-energy columns not in the valence set.
+            if (_frozen_core_mode != all_electron) {
+              for (size_t j = 0; j < _nao; ++j) {
+                bool j_in_valence = (std::find(_valence_cols.begin(), _valence_cols.end(), j) != _valence_cols.end());
+                if (!j_in_valence) Sm(0, j) = 0.0;
+              }
+            }
+            if (_plug_core_mode) {
+              for (size_t j = 0; j < _nao; ++j) {
+                Sm(0, j) += _core_sigma(t, is, k0_pos, i, j);
+              }
+            }
           }
         }
       }

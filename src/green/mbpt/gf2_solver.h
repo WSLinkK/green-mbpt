@@ -49,8 +49,33 @@ namespace green::mbpt {
       ar["params/ns"] >> _ns;
       ar["params/NQ"] >> _NQ;
       ar.close();
-    }
 
+
+      h5pp::archive core(p["atom_core_file"]);
+      core[p["atom_store_key"]] >> _core_sigma;
+      core.close();
+      
+      const std::array<size_t,5> &shp = _core_sigma.shape();
+      assert(shp[0] == _nts);
+      assert(shp[1] == _ns);
+      assert(shp[2] == _nk);
+      assert(shp[3] == _nao);
+      assert(shp[4] == _nao);
+
+      std::cout << _core_sigma(0,0,0,0,0) << std::endl;
+      const std::string valence_rows_str = p["valence_rows"];
+      const std::string valence_cols_str = p["valence_cols"];
+
+      _valence_rows = parse_index_list(valence_rows_str);
+
+      if (!valence_cols_str.empty()) {
+        _valence_cols = parse_index_list(valence_cols_str);
+      } else {
+        _valence_cols = _valence_rows;  // default: same as rows
+      }
+      _frozen_core_mode = p["frozen_core_mode"];
+      _plug_core_mode   = p["plug_core"];
+    }
      /**
       * Solve GF2 equations for Self-energy
       *
@@ -73,11 +98,19 @@ namespace green::mbpt {
     size_t            _ns;
     size_t            _NQ;
 
+
+    std::vector<std::size_t> _valence_rows;
+    std::vector<std::size_t> _valence_cols;
+
+    frozen_core_mode_e       _frozen_core_mode;
+    bool                     _plug_core_mode;
+  
     // Path to H5 file
     const std::string _path;
 
     // references to arrays
     ztensor<5>        Sigma_local;
+    ztensor<5>        _core_sigma;
 
     // Current time step Green's function matrix for k1
     Eigen::MatrixXcd  _G_k1_tmp;
@@ -118,6 +151,47 @@ namespace green::mbpt {
      */
     void      selfenergy_innerloop(size_t tau_offset, size_t ntau_local, const std::array<size_t, 4>& k, size_t is, const ztensor<5>& Gr_full_tau);
 
+        //* --- parse core_rows / core_cols from params ---
+    std::vector<std::size_t> parse_index_list(const std::string& s) const {
+      std::vector<std::size_t> idx;
+      std::stringstream ss(s);
+      std::string token;
+
+      while (std::getline(ss, token, ',')) {
+        // trim spaces
+        std::size_t begin = token.find_first_not_of(" \t");
+        if (begin == std::string::npos) {
+          continue;
+        }
+        std::size_t end = token.find_last_not_of(" \t");
+        std::string trimmed = token.substr(begin, end - begin + 1);
+
+        if (!trimmed.empty()) {
+          std::size_t value = static_cast<std::size_t>(std::stoul(trimmed));
+          idx.push_back(value);
+        }
+      }
+
+      return idx;
+    }
+
+    Eigen::MatrixXcd restrict_orbitals(
+    const Eigen::MatrixXcd& input,
+    const std::vector<std::size_t>& idx_row,
+    const std::vector<std::size_t>& idx_col) const
+    {
+        Eigen::MatrixXcd output = Eigen::MatrixXcd::Zero(input.rows(), input.cols());
+
+        for (std::size_t a = 0; a < idx_row.size(); ++a) {
+            std::size_t i = idx_row[a];
+            for (std::size_t b = 0; b < idx_col.size(); ++b) {
+                std::size_t j = idx_col[b];
+                output(i, j) = input(i, j);
+            }
+        }
+        return output;
+    }
+  
     /**
      * Performs all possible contractions for i and n indices
      */
