@@ -188,6 +188,7 @@ namespace green::mbpt {
         "valence_outer (restrict self-energy (i,j) indices only), "
         "valence_full (restrict both self-energy and Green's function (G1/G2/G3) indices).",
         all_electron);
+    p.define<bool>("plug_core", "Plug core orbitals into the calculation", false);
 
 #ifdef GREEN_CUSTOM_KERNEL_HEADER_0
     GREEN_CUSTOM_KERNEL_NS_0::custom_kernel_parameters(p);

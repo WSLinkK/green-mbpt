@@ -96,7 +96,6 @@ namespace green::mbpt {
       utils::allreduce(MPI_IN_PLACE, Sigma_tau.data(), Sigma_tau.size() / (_nso * _nso), dt_matrix, matrix_sum_op,
                        utils::context.internode_comm);
       Sigma_tau /= (_nk * _nk);
-      // Sigma_tau += _core_sigma;
     }
     sigma_tau.fence();
     statistics.end();
@@ -201,6 +200,11 @@ namespace green::mbpt {
               for (size_t j = 0; j < _nao; ++j) {
                 bool j_in_valence = (std::find(_valence_cols.begin(), _valence_cols.end(), j) != _valence_cols.end());
                 if (!j_in_valence) Sm(0, j) = 0.0;
+              }
+            }
+            if (_plug_core_mode) {
+              for (size_t j = 0; j < _nao; ++j) {
+                Sm(0, j) += _core_sigma(t, is, k0_pos, i, j);
               }
             }
           }

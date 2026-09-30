@@ -73,6 +73,7 @@ namespace green::mbpt {
         _valence_cols = _valence_rows;  // default: same as rows
       }
       _frozen_core_mode = p["frozen_core_mode"];
+      _plug_core_mode   = p["plug_core"];
     }
 
      /**
@@ -101,6 +102,7 @@ namespace green::mbpt {
     std::vector<std::size_t> _valence_cols;
 
     frozen_core_mode_e       _frozen_core_mode;
+    bool                     _plug_core_mode;
 
     // Path to H5 file
     const std::string _path;
